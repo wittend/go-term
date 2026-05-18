@@ -36,4 +36,7 @@ The project should be written in Go, though plugins or extensions can be written
 - I want the project to have a clear roadmap for future development and feature additions.
 - I want the project to have a clear and concise license for open source contributions and usage.
 
-
+I want you to review where we left off with this project and consider the these additional requirements:
+1)  resizeable, non overlapping windows selectable with a tab bar.
+2) A simple toolbar that respects the currently selected terminal.
+3) a context sensitive status bar at the bottom that indicates the current line, character position name of currently selected terminal.

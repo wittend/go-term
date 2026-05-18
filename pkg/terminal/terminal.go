@@ -14,26 +14,44 @@ type Terminal struct {
 	View    *tvxterm.View
 	Backend *tvxterm.PTYBackend
 	LogFile *os.File
+	Name    string
 }
 
 // Manager handles multiple terminal sessions.
 type Manager struct {
-	App      *tview.Application
-	Pages    *tview.Pages
-	Sessions []*Terminal
-	Current  int
+	App       *tview.Application
+	MainView  *tview.Flex
+	Pages     *tview.Pages
+	TabBar    *tview.TextView
+	Toolbar   *tview.TextView
+	StatusBar *tview.TextView
+	Sessions  []*Terminal
+	Current   int
 }
 
-// NewManager creates a new Manager.
+// NewManager creates a new Manager and initializes the layout.
 func NewManager(app *tview.Application) *Manager {
-	return &Manager{
-		App:   app,
-		Pages: tview.NewPages(),
+	m := &Manager{
+		App:       app,
+		Pages:     tview.NewPages(),
+		TabBar:    tview.NewTextView().SetDynamicColors(true).SetRegions(true).SetWrap(false),
+		Toolbar:   tview.NewTextView().SetDynamicColors(true).SetText(" [black:white] F1:New [-] [black:white] F2:Next [-] [black:white] F10:Quit [-]"),
+		StatusBar: tview.NewTextView().SetDynamicColors(true),
+		Sessions:  []*Terminal{},
+		Current:   -1,
 	}
+
+	m.MainView = tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(m.TabBar, 1, 1, false).
+		AddItem(m.Toolbar, 1, 1, false).
+		AddItem(m.Pages, 0, 1, true).
+		AddItem(m.StatusBar, 1, 1, false)
+
+	return m
 }
 
 // NewTerminal creates a new Terminal session.
-func NewTerminal(app *tview.Application, shell string, logPath string) (*Terminal, error) {
+func NewTerminal(app *tview.Application, shell string, logPath string, name string) (*Terminal, error) {
 	view := tvxterm.New(app)
 	view.SetBorder(true)
 
@@ -62,12 +80,14 @@ func NewTerminal(app *tview.Application, shell string, logPath string) (*Termina
 		View:    view,
 		Backend: backend,
 		LogFile: logFile,
+		Name:    name,
 	}, nil
 }
 
 // AddSession adds a new terminal session.
 func (m *Manager) AddSession(shell string, logPath string) error {
-	term, err := NewTerminal(m.App, shell, logPath)
+	name := fmt.Sprintf("Term %d", len(m.Sessions)+1)
+	term, err := NewTerminal(m.App, shell, logPath, name)
 	if err != nil {
 		return err
 	}
@@ -78,17 +98,44 @@ func (m *Manager) AddSession(shell string, logPath string) error {
 	m.Pages.SwitchToPage(id)
 	m.Current = len(m.Sessions) - 1
 
-	term.View.SetTitle(fmt.Sprintf("Terminal %d", len(m.Sessions)))
+	term.View.SetTitle(name)
+
+	m.UpdateUI()
 
 	return nil
 }
 
 // NextSession switches to the next terminal session.
 func (m *Manager) NextSession() {
-	if len(m.Sessions) == 0 {
+	if len(m.Sessions) <= 1 {
 		return
 	}
 	m.Current = (m.Current + 1) % len(m.Sessions)
 	id := fmt.Sprintf("%d", m.Current)
 	m.Pages.SwitchToPage(id)
+	m.UpdateUI()
+}
+
+// UpdateUI updates the TabBar and StatusBar.
+func (m *Manager) UpdateUI() {
+	if m.Current < 0 || m.Current >= len(m.Sessions) {
+		return
+	}
+
+	// Update TabBar
+	var tabs string
+	for i, session := range m.Sessions {
+		if i == m.Current {
+			tabs += fmt.Sprintf(" [white:blue] %s [-] ", session.Name)
+		} else {
+			tabs += fmt.Sprintf(" [black:gray] %s [-] ", session.Name)
+		}
+	}
+	m.TabBar.SetText(tabs)
+
+	// Update StatusBar
+	currentSession := m.Sessions[m.Current]
+	// Since we can't easily get cursor position from tvxterm, we'll show the name and placeholders
+	status := fmt.Sprintf(" [black:white] Terminal: %s [-] [white:blue] Line: - Col: - [-]", currentSession.Name)
+	m.StatusBar.SetText(status)
 }

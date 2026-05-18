@@ -17,6 +17,7 @@ func main() {
 	log := flag.String("log", "", "File to capture session to")
 	flag.Parse()
 
+	_ = title // title is currently not used for window title since we use tabs
 	app := tview.NewApplication()
 	manager := terminal.NewManager(app)
 
@@ -28,25 +29,20 @@ func main() {
 
 	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
-		case tcell.KeyCtrlT:
+		case tcell.KeyCtrlT, tcell.KeyF1:
 			manager.AddSession(*shell, "")
 			return nil
-		case tcell.KeyCtrlN:
+		case tcell.KeyCtrlN, tcell.KeyF2:
 			manager.NextSession()
 			return nil
-		case tcell.KeyCtrlQ:
+		case tcell.KeyCtrlQ, tcell.KeyF10:
 			app.Stop()
 			return nil
-		case tcell.KeyCtrlL:
-			// Example of how we could trigger a "Connect to SSH" dialog
-			return event
 		}
 		return event
 	})
 
-	manager.Pages.SetTitle(*title)
-
-	if err := app.SetRoot(manager.Pages, true).Run(); err != nil {
+	if err := app.SetRoot(manager.MainView, true).Run(); err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}

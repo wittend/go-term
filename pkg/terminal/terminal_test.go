@@ -19,8 +19,20 @@ func TestNewManager(t *testing.T) {
 	if m.Pages == nil {
 		t.Error("Expected Pages to be initialized")
 	}
+	if m.MainView == nil {
+		t.Error("Expected MainView to be initialized")
+	}
+	if m.TabBar == nil {
+		t.Error("Expected TabBar to be initialized")
+	}
+	if m.StatusBar == nil {
+		t.Error("Expected StatusBar to be initialized")
+	}
 	if len(m.Sessions) != 0 {
 		t.Errorf("Expected 0 sessions initially, got %d", len(m.Sessions))
+	}
+	if m.Current != -1 {
+		t.Errorf("Expected Current to be -1 initially, got %d", m.Current)
 	}
 }
 
@@ -61,8 +73,8 @@ func TestNextSession(t *testing.T) {
 
 	// No sessions yet
 	m.NextSession()
-	if m.Current != 0 {
-		t.Errorf("Expected Current to remain 0 with no sessions, got %d", m.Current)
+	if m.Current != -1 {
+		t.Errorf("Expected Current to remain -1 with no sessions, got %d", m.Current)
 	}
 
 	// Add two sessions
@@ -89,7 +101,7 @@ func TestNewTerminalLogging(t *testing.T) {
 	logPath := "test_session.log"
 	defer os.Remove(logPath)
 
-	term, err := NewTerminal(app, "echo", logPath)
+	term, err := NewTerminal(app, "echo", logPath, "TestTerm")
 	if err != nil {
 		t.Fatalf("Failed to create terminal with logging: %v", err)
 	}
