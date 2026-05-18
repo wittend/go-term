@@ -22,6 +22,16 @@
 go.work
 go.work.sum
 
-# env file
-.env
+# Project specific binaries
+go-term
+
+# Logs
+*.log
+session.log
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
 
